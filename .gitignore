@@ -55,6 +55,7 @@ target/
 
 # data
 data/*
+*.csv
 
 # auth file
 auth.txt
@@ -66,3 +67,4 @@ auth.txt
 
 # some other files
 old.py
+
