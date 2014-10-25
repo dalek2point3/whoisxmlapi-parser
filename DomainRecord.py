@@ -6,7 +6,7 @@ import re
 class ContactBlock:
 
     def __init__(self, blocktype):
-        self.fields = ['city', 'country','name','email','organization','postalCode','state', 'street1', 'street2', 'telephone', 'name']
+        self.fields = ['city', 'country','name','email','organization','postalCode','state', 'street1', 'street2', 'telephone']
         for field in self.fields:
             setattr(self, field, "")
         self.blocktype = blocktype
@@ -28,7 +28,7 @@ class SubRecord:
 
         self.contacts = ['administrativeContact', 'billingContact','registrant','technicalContact','zoneContact']
         for contact in self.contacts:
-            Setattr(self, contact, ContactBlock(contact))
+            setattr(self, contact, ContactBlock(contact))
 
         self.sdata = sdata
 
@@ -59,6 +59,8 @@ class DomainRecord:
     def __init__(self, domain):
         self.domain = domain
         self.fname = "data/" + domain + ".json"
+        self.whois = ""
+        self.registrydata = ""
 
     def get_auth(self, infile='auth.txt'):
     # helper function of get username / pwd for WHOISXMLAPI
@@ -72,7 +74,6 @@ class DomainRecord:
     def handle_audit(self):
     # helper function of fix audit records
         if 'WhoisRecord' in self.data:
-
             result = self.data
             if 'audit' in result:
                 if 'createdDate' in result['audit']:
@@ -83,8 +84,6 @@ class DomainRecord:
                         result['audit']['updatedDate'] = result['audit']['updatedDate']['$']
                         
             return result
-        else:
-            print "no WHOIS RECORD in " + self.domain
 
 
     def get_data(self):
@@ -132,10 +131,31 @@ class DomainRecord:
 
         if 'WhoisRecord' in self.data:
             self.whois = SubRecord("whois", self.data['WhoisRecord'])
-            print "parsing whois"
             self.whois.parse()
 
         if 'registryData' in self.data['WhoisRecord']:
-            self.registrydata = SubRecord("whois",  self.data['WhoisRecord']['registryData'])
-            print "parsing rdata"
+            self.registrydata = SubRecord("registryData",  self.data['WhoisRecord']['registryData'])
             self.registrydata.parse()
+
+
+    def make_lines(self):
+    # this converts the entire data structure into multiple lines, one each for sub-record / contact combo
+
+        subrecords = ["whois", "registrydata"]
+        lines = []
+
+        for sr in subrecords:
+            if getattr(self,sr) != "":
+                        sub_record = getattr(self,sr)
+                        items1 = [self.domain, sr, sub_record.createdDate, sub_record.updatedDate,sub_record.registrarName, sub_record.registrarIANAID, sub_record.parseCode]
+
+                        for c in sub_record.contacts:
+                            cnt = getattr(sub_record, c)
+                            items2 = [c]
+                            for f in cnt.fields:
+                                items2.append(getattr(cnt,f))
+
+                            items = items1 + items2
+                            lines.append(items)
+
+        return lines

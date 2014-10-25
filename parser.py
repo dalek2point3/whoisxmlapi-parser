@@ -31,22 +31,10 @@ def writedata(drecords, outfile = "data.csv"):
 
     with open(outfile, 'w') as outf:
         outf.write(makeline(cols))
-
         for d in drecords:
-            if d.domain != "":
-                for sr in subrecords:
-                    if getattr(d,sr) != "":
-                        sub_record = getattr(d,sr)
-                        items1 = [d.domain, sr, sub_record.createdDate, sub_record.updatedDate,sub_record.registrarName, sub_record.registrarIANAID, sub_record.parseCode]
-
-                        for c in contacts:
-                            cnt = getattr(sub_record, c)
-                            items2 = [c]
-                            for f in fields:
-                                items2.append(getattr(cnt,f))
-
-                            items = items1 + items2
-                            outf.write(makeline(items))
+            lines = d.make_lines()
+            for items in lines:
+                outf.write(makeline(items))
 
     return
 
