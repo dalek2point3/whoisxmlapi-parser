@@ -20,14 +20,9 @@ def makeline(items):
     return row
 
 def writedata(drecords, outfile = "data.csv"):
-
-    fields = ['city', 'country','name','email','organization','postalCode','state', 'street1', 'street2', 'telephone']
     cols1 = ['domain', 'subrecord','created','updated','registrarname','registrarid','parsecode', 'contacttype']
-
+    fields = ['city', 'country','name','email','organization','postalCode','state', 'street1', 'street2', 'telephone']
     cols = cols1 + fields
-
-    subrecords = ["whois", "registrydata"]
-    contacts = ['administrativeContact', 'billingContact','registrant','technicalContact','zoneContact']
 
     with open(outfile, 'w') as outf:
         outf.write(makeline(cols))
