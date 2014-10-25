@@ -152,10 +152,16 @@ class DomainRecord:
                         for c in sub_record.contacts:
                             cnt = getattr(sub_record, c)
                             items2 = [c]
+
+                            notempty_flag = 0
                             for f in cnt.fields:
                                 items2.append(getattr(cnt,f))
+                                # if not empty, set flag to 1
+                                if getattr(cnt,f) != "":
+                                    notempty_flag = max(notempty_flag, 1)
 
-                            items = items1 + items2
-                            lines.append(items)
+                            if notempty_flag > 0:
+                                items = items1 + items2
+                                lines.append(items)
 
         return lines
