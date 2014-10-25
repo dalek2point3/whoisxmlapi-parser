@@ -14,30 +14,64 @@ def readlist(fname = "domains.csv"):
 
 class ContactBlock:
     def __init__(self, blocktype):
-        self.city = ""
-        self.country = ""
-        self.name = ""
-        self.email = ""
-        self.organization = ""
-        self.postalCode = ""
-        self.state = ""
-        self.street1 = ""
-        self.street2 = ""
-        self.telephone = ""
-        self.name = ""
+
+        self.fields = ['city', 'country','name','email','organization','postalCode','state', 'street1', 'street2', 'telephone', 'name']
+        for field in self.fields:
+            setattr(self, field, "")
         self.blocktype = blocktype
+
+    def get_fields(self, data):
+
+        for field in self.fields:
+            if field in data:
+                setattr(self, field, data[field])
+
 
 class SubRecord:
 
     def __init__(self, recordtype, sdata):
         self.recordtype = recordtype
         self.createdDate = ""
+        self.updatedDate = ""
+        self.registrarName = ""
+        self.registrarIANAID = ""
+
         self.administrativeContact = ContactBlock("administrativeContact")
         self.billingContact = ContactBlock("billingContact")
         self.registrant = ContactBlock("registrant")
         self.technicalContact = ContactBlock("technicalContact")
         self.zoneContact = ContactBlock("zoneContact")
         self.sdata = sdata
+
+    def parse(self):
+
+        if 'createdDate' in self.sdata:
+            self.createdDate =  self.sdata['createdDate']
+
+        if 'updatedDate' in self.sdata:
+            self.updatedDate =  self.sdata['updatedDate']
+
+        if 'registrarName' in self.sdata:
+            self.registrarName =  self.sdata['registrarName']
+
+        if 'registrarIANAID' in self.sdata:
+            self.registrarIANAID =  self.sdata['registrarIANAID']
+
+        if 'administrativeContact' in self.sdata:
+            self.administrativeContact.get_fields(self.sdata['administrativeContact'])
+
+        if 'billingContact' in self.sdata:
+            self.billingContact.get_fields(self.sdata['billingContact'])
+
+        if 'registrant' in self.sdata:
+            self.registrant.get_fields(self.sdata['registrant'])
+
+        if 'technicalContact' in self.sdata:
+            self.technicalContact.get_fields(self.sdata['technicalContact'])
+
+        if 'zoneContact' in self.sdata:
+            self.registrant.get_fields(self.sdata['zoneContact'])
+
 
 class DomainRecord:
 
@@ -78,7 +112,6 @@ class DomainRecord:
         auth = self.get_auth()
         user = auth['username']
         password = auth['pwd']
-        print auth
 
         url = "http://www.whoisxmlapi.com/whoisserver/WhoisService?domainName=" + self.domain + "&da=2&outputFormat=" + outputFormat + "&username=" + user + "&password=" + password
         
@@ -111,19 +144,19 @@ class DomainRecord:
         return
 
 
-    def parse(self):
+    def parse_data(self):
 
-        result = self.data
-
-        if result == None:
+        if self.data == None:
             return
 
-        if 'WhoisRecord' in result:
+        if 'WhoisRecord' in self.data:
             self.whois = SubRecord("whois", self.data['WhoisRecord'])
+            print "parsing whois"
             self.whois.parse()
 
-        if 'registryData' in result:
-            self.registrydata = SubRecord("whois",  self.data['registryData'])
+        if 'registryData' in self.data['WhoisRecord']:
+            self.registrydata = SubRecord("whois",  self.data['WhoisRecord']['registryData'])
+            print "parsing rdata"
             self.registrydata.parse()
 
 
@@ -147,30 +180,13 @@ def getdata(domains):
     return domainrecords
 
 
-def test_domain(domain):
-    d = DomainRecord(domain)
-    d.getdata()
-    d.parse()
-    
-    items = [d.org, d.street1, d. name, d. country, d.createdDate]
-    items = [re.sub(r'[\n\t]+', '', x) for x in items]
-    print "----------"
-    print items
-    print "----------"
-
 if __name__ == "__main__":
 
-    domains = readlist()
-    print domains
-    #domains = domains[0:500]
-    print 
-    print "fetching data"
-    print "..."
-    # domainrecords = getdata(domains)
+    domains = readlist("domains.csv")
 
-    domain = "google.com"
-    d = DomainRecord(domain)
+    d = DomainRecord(domains[0])
     d.get_data()
+    d.parse_data()
 
     # print "writing data"
     # writedata(domainrecords, "data2.csv")
