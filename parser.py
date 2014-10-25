@@ -3,13 +3,6 @@ import requests
 import os
 import re
 
-def get_auth(infile='auth.txt'):
-    auth = dict()
-    with open(infile) as f:
-        auth['username'] = f.readline().strip()
-        auth['pwd'] = f.readline().strip()
-    return auth
-
 def readlist(fname = "domains.csv"):
 
     domains = []
@@ -19,30 +12,53 @@ def readlist(fname = "domains.csv"):
             domains.append(line.strip())
     return domains
 
+class ContactBlock:
+    def __init__(self, blocktype):
+        self.city = ""
+        self.country = ""
+        self.name = ""
+        self.email = ""
+        self.organization = ""
+        self.postalCode = ""
+        self.state = ""
+        self.street1 = ""
+        self.street2 = ""
+        self.telephone = ""
+        self.name = ""
+        self.blocktype = blocktype
+
+class SubRecord:
+
+    def __init__(self, recordtype, sdata):
+        self.recordtype = recordtype
+        self.createdDate = ""
+        self.administrativeContact = ContactBlock("administrativeContact")
+        self.billingContact = ContactBlock("billingContact")
+        self.registrant = ContactBlock("registrant")
+        self.technicalContact = ContactBlock("technicalContact")
+        self.zoneContact = ContactBlock("zoneContact")
+        self.sdata = sdata
 
 class DomainRecord:
 
     def __init__(self, domain):
         self.domain = domain
-        self.createdDate = ""
-        self.org = ""
-        self.street1 = ""
-        self.street2 = ""
-        self.street3 = ""
-        self.city = ""
-        self.postalCode = ""
-        self.country = ""
-        self.state = ""
-        self.email = ""
-        self.telephone = ""
-        self.name = ""
         self.fname = "data/" + domain + ".json"
 
+    def get_auth(self, infile='auth.txt'):
+    # helper function of get username / pwd for WHOISXMLAPI
+        auth = dict()
+
+        with open(infile,'r') as f:
+            auth['username'] = f.readline().strip()
+            auth['pwd'] = f.readline().strip()
+        return auth
+
     def handle_audit(self):
-        
+    # helper function of fix audit records
         if 'WhoisRecord' in self.data:
 
-            result = self.data['WhoisRecord']
+            result = self.data
             if 'audit' in result:
                 if 'createdDate' in result['audit']:
                     if '$' in result['audit']['createdDate']:
@@ -55,106 +71,61 @@ class DomainRecord:
         else:
             print "no WHOIS RECORD in " + self.domain
 
-    def getdata(self):
+
+    def get_data(self):
 
         outputFormat = 'json'
+        auth = self.get_auth()
+        user = auth['username']
+        password = auth['pwd']
+        print auth
 
         url = "http://www.whoisxmlapi.com/whoisserver/WhoisService?domainName=" + self.domain + "&da=2&outputFormat=" + outputFormat + "&username=" + user + "&password=" + password
         
         if not os.path.exists(self.fname):
+
+            # get data because it does not seem to exist
             r= requests.get(url)
             if r.status_code == 200:
 
                 try:
                     self.data = json.loads(r.text)
                 except:
-                    print self.domain
+                    print self.domain + " does not seem to have json data"
                     return
 
                 with open(self.fname, 'w') as f:
                     f.write(r.text.encode('utf-8'))
-                    print "wrote data to " + self.fname
+                    print "fetched data to " + self.fname
             else:
+                print self.domain + "  -- error getting data"
                 self.data = ""
+                return
         else:
+            # read data that we have saved before
             with open(self.fname) as f:
                 print "exists: " + self.fname
                 self.data = json.loads(f.read().decode('utf8'))
-                self.data = self.handle_audit()
+
+        self.data = self.handle_audit()
+        return
+
 
     def parse(self):
 
-        registrant = []
         result = self.data
 
         if result == None:
             return
-            
-        #if 'audit' in result:
-        #    if 'createdDate' in result['audit']:
-        #        self.createdDate = result['audit']['createdDate']
 
-        # TODO: if multiple of these exist, choose the best one
-        if 'registrant' in result:
-            registrant = result['registrant']
-        elif 'registryData' in result:
-            if 'registrant' in result['registryData']:
-                registrant = result['registryData']['registrant']
-            elif 'technicalContact' in result['registryData']:
-                registrant = result['registryData']['technicalContact']
-            elif 'zoneContact' in result['registryData']:
-                registrant = result['registryData']['zoneContact']
-            elif 'administrativeContact' in result['registryData']:
-                registrant = result['registryData']['administrativeContact']
-        else:
-            print self.domain + ": registrant not found"
-            return
+        if 'WhoisRecord' in result:
+            self.whois = SubRecord("whois", self.data['WhoisRecord'])
+            self.whois.parse()
 
-        if 'createdDate' in registrant:
-            self.createdDate = registrant['createdDate']
-        elif 'createdDate' in result:
-            self.createdDate = result['createdDate']
-        elif 'createdDate' in result['registryData']:
-            self.createdDate = result['registryData']['createdDate']
+        if 'registryData' in result:
+            self.registrydata = SubRecord("whois",  self.data['registryData'])
+            self.registrydata.parse()
 
-        if 'organization' in registrant:
-            self.org = registrant['organization']
-
-        if 'name' in registrant:
-            self.name = registrant['name']
-
-        if 'organization' in registrant:
-            self.org = registrant['organization']
-
-        if 'street1' in registrant:
-            self.street1 = registrant['street1']
-
-        if 'street2' in registrant:
-            self.street2 = registrant['street2']
-
-        if 'street3' in registrant:
-            self.street3 = registrant['street3']
-
-        if 'city' in registrant:
-            self.city = registrant['city']
-
-        if 'postalcode' in registrant:
-            self.postalcode = registrant['country']
-
-        if 'state' in registrant:
-            self.state = registrant['state']
-
-        if 'country' in registrant:
-            self.country = registrant['country']
-
-        if 'email' in registrant:
-            self.email = registrant['email']
-
-        if 'telephone' in registrant:
-            self.telephone = registrant['telephone']
-
-        if 'postalCode' in registrant:
-            self.postalCode = registrant['postalCode']
 
 def strip_non_ascii(string):
     ''' Returns the string without non ASCII characters'''
@@ -162,22 +133,7 @@ def strip_non_ascii(string):
     return ''.join(stripped)
 
 def writedata(domainrecords, outfile = "data.csv"):
-    
-    header = "\t".join(["domain", "createdDate", "name", "org", "street1", "street2", "street3", "city", "state", "postalCode", "country", "email", "telephone"]) + "\n"
-    with open(outfile, 'w') as f:
-        f.write(header)
-        for d in domainrecords:
-            d.parse()
-            print "writing " + d.domain
-
-            items = [d.domain, d.createdDate, d.name, d.org, d.street1, d.street2, d.street3, d.city, d.state, d.postalCode, d.country, d.email, d.telephone] 
-
-            # items = [re.sub(r'[^\x00-\x7F\n\t]+', '', x) for x in items]
-            items = [strip_non_ascii(x) for x in items]
-            items = [re.sub(r'[\n\t]+', '', x) for x in items]
-
-            row = "\t".join(items) + "\n"
-            f.write(row)
+    return
 
 def getdata(domains):
     domainrecords = []
@@ -211,7 +167,11 @@ if __name__ == "__main__":
     print "fetching data"
     print "..."
     # domainrecords = getdata(domains)
-    
+
+    domain = "google.com"
+    d = DomainRecord(domain)
+    d.get_data()
+
     # print "writing data"
     # writedata(domainrecords, "data2.csv")
 
