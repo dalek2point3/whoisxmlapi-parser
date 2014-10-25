@@ -1,14 +1,12 @@
 #!/usr/bin/env python
+from DomainRecord import *
 
 """parse.py: This program reads a list of domains from domains.csv, gets WHOIS data and stores in data/ folder and then converts this data to csv and writes it to a file -- data.csv."""
-
-from DomainRecord import *
 
 __author__ = "dalek2point3"
 __license__ = "GPL"
 __version__ = "0.1"
 __status__ = "Development"
-
 
 def readlist(fname = "domains.csv"):
     domains = []
@@ -24,9 +22,18 @@ def strip_non_ascii(string):
     return ''.join(stripped)
 
 def makeline(items):
-    items = [strip_non_ascii(str(x)) for x in items]
-    items = [re.sub(r'[\n\t]+', '', x) for x in items]
-    row = "\t".join(items) + "\n"
+
+    vals = []
+    # TODO: fix ugly unicode hack
+    for x in items:
+        if type(x) == int:
+            vals.append(str(x))
+        else:
+            vals.append(strip_non_ascii(x))
+
+    ##items = [strip_non_ascii(str(x)) for x in items]
+    vals = [re.sub(r'[\n\t]+', '', x) for x in vals]
+    row = "\t".join(vals) + "\n"
     return row
 
 def writedata(drecords, outfile = "data.csv"):
@@ -60,9 +67,11 @@ def test_record(d):
         print x, getattr(d.whois, x)
 
 if __name__ == "__main__":
+
     domains = readlist("domains.csv")
     drecords = get_data(domains)
     writedata(drecords)
+
     #test_record(drecords[0])
 
 
