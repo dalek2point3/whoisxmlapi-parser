@@ -1,4 +1,14 @@
+#!/usr/bin/env python
+
+"""parse.py: This program reads a list of domains from domains.csv, gets WHOIS data and stores in data/ folder and then converts this data to csv and writes it to a file -- data.csv."""
+
 from DomainRecord import *
+
+__author__ = "dalek2point3"
+__license__ = "GPL"
+__version__ = "0.1"
+__status__ = "Development"
+
 
 def readlist(fname = "domains.csv"):
     domains = []
