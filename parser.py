@@ -17,7 +17,6 @@ def readlist(fname = "domains.csv"):
         for line in f:
             # domains ideally in format, google.com, not www.google.com or http://www.google.com/
             domains.append(line.strip())
-        
     return domains
 
 
@@ -59,8 +58,6 @@ class DomainRecord:
     def getdata(self):
 
         outputFormat = 'json'
-        user = 'dalek2point3'
-        password = 'quark'
 
         url = "http://www.whoisxmlapi.com/whoisserver/WhoisService?domainName=" + self.domain + "&da=2&outputFormat=" + outputFormat + "&username=" + user + "&password=" + password
         
