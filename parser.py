@@ -13,15 +13,14 @@ def readlist(fname = "domains.csv"):
     return domains
 
 class ContactBlock:
-    def __init__(self, blocktype):
 
+    def __init__(self, blocktype):
         self.fields = ['city', 'country','name','email','organization','postalCode','state', 'street1', 'street2', 'telephone', 'name']
         for field in self.fields:
             setattr(self, field, "")
         self.blocktype = blocktype
 
     def get_fields(self, data):
-
         for field in self.fields:
             if field in data:
                 setattr(self, field, data[field])
@@ -30,33 +29,26 @@ class ContactBlock:
 class SubRecord:
 
     def __init__(self, recordtype, sdata):
-        self.recordtype = recordtype
-        self.createdDate = ""
-        self.updatedDate = ""
-        self.registrarName = ""
-        self.registrarIANAID = ""
 
-        self.administrativeContact = ContactBlock("administrativeContact")
-        self.billingContact = ContactBlock("billingContact")
-        self.registrant = ContactBlock("registrant")
-        self.technicalContact = ContactBlock("technicalContact")
-        self.zoneContact = ContactBlock("zoneContact")
+        self.recordtype = recordtype
+
+        self.fields = ['createdDate', 'updatedDate', 'registrarName', 'registrarIANAID']
+        for field in self.fields:
+            setattr(self, field, "")
+
+        self.contacts = ['administrative', 'billing','registrant','technical','zone']
+        for contact in self.contacts:
+            setattr(self, contact, ContactBlock(contact))
+
         self.sdata = sdata
 
     def parse(self):
 
-        if 'createdDate' in self.sdata:
-            self.createdDate =  self.sdata['createdDate']
+        for field in self.fields:
+            if field in self.data:
+                setattr(self, field, self.sdata[field])
 
-        if 'updatedDate' in self.sdata:
-            self.updatedDate =  self.sdata['updatedDate']
-
-        if 'registrarName' in self.sdata:
-            self.registrarName =  self.sdata['registrarName']
-
-        if 'registrarIANAID' in self.sdata:
-            self.registrarIANAID =  self.sdata['registrarIANAID']
-
+        # TODO: make this shorter using getattr
         if 'administrativeContact' in self.sdata:
             self.administrativeContact.get_fields(self.sdata['administrativeContact'])
 
